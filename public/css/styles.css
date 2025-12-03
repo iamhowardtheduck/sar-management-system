@@ -224,6 +224,16 @@ body {
   background: var(--surface-light);
 }
 
+.btn-accent {
+  background: #10b981; /* Green color for XML/compliance actions */
+  color: var(--surface-white);
+}
+
+.btn-accent:hover {
+  background: #059669; /* Darker green on hover */
+  transform: translateY(-1px);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
@@ -304,6 +314,40 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
+  margin-bottom: 16px;
+}
+
+.report-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--surface-gray);
+  flex-wrap: wrap;
+}
+
+.report-actions .btn-primary,
+.report-actions .btn-secondary,
+.report-actions .btn-accent {
+  flex: 1;
+  min-width: 120px;
+  max-width: 140px;
+  padding: 8px 10px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .report-actions {
+    flex-direction: column;
+  }
+  
+  .report-actions .btn-primary,
+  .report-actions .btn-secondary,
+  .report-actions .btn-accent {
+    max-width: none;
+    min-width: auto;
+  }
 }
 
 .field-group {
@@ -426,6 +470,19 @@ body {
   font-size: 18px;
   font-weight: 600;
   color: var(--primary-navy);
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-pdf-btn {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  gap: 4px;
 }
 
 .modal-close {
