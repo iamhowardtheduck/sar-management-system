@@ -8,10 +8,43 @@ echo ""
 INSTALL_DIR="/workspace/workshop/sar-system-complete"
 echo "📁 Installation directory: $INSTALL_DIR"
 
-# Clean up any existing installation
+# Clean up any existing installation but preserve user files
 if [ -d "$INSTALL_DIR" ]; then
     echo "🧹 Cleaning up existing installation..."
+    
+    # Create temporary backup for user files
+    BACKUP_DIR="/tmp/sar-backup-$$"
+    mkdir -p "$BACKUP_DIR"
+    
+    echo "💾 Backing up user files..."
+    
+    # Backup PDF files (SAR templates, etc.)
+    if ls "$INSTALL_DIR"/*.pdf 1> /dev/null 2>&1; then
+        cp "$INSTALL_DIR"/*.pdf "$BACKUP_DIR/"
+        echo "  ✅ PDF files backed up"
+    fi
+    
+    # Backup custom data files
+    if [ -d "$INSTALL_DIR/data" ]; then
+        cp -r "$INSTALL_DIR/data" "$BACKUP_DIR/"
+        echo "  ✅ Data directory backed up"
+    fi
+    
+    # Backup custom configuration files
+    if [ -f "$INSTALL_DIR/.env.local" ]; then
+        cp "$INSTALL_DIR/.env.local" "$BACKUP_DIR/"
+        echo "  ✅ Local environment config backed up"
+    fi
+    
+    # Backup any custom scripts
+    if ls "$INSTALL_DIR"/custom-*.* 1> /dev/null 2>&1; then
+        cp "$INSTALL_DIR"/custom-*.* "$BACKUP_DIR/"
+        echo "  ✅ Custom scripts backed up"
+    fi
+    
+    # Remove old installation
     rm -rf "$INSTALL_DIR"
+    echo "  ✅ Old installation removed"
 fi
 
 # Create fresh directory
@@ -1460,7 +1493,7 @@ class SARApplication {
               📄 Generate PDF
             </button>
             <button class="btn-accent generate-8300" data-id="${report.id}">
-              📋 Generate 8300 XML
+              📋 Submit FinCEN8300
             </button>
           </div>
         </div>
@@ -1840,7 +1873,7 @@ class SARApplication {
       
       buttonElement.innerHTML = '❌ Error';
       setTimeout(() => {
-        buttonElement.innerHTML = '📋 Generate 8300 XML';
+        buttonElement.innerHTML = '📋 Submit FinCEN8300';
         buttonElement.disabled = false;
       }, 3000);
 
@@ -1927,7 +1960,7 @@ cat > views/index.ejs << 'EOF'
                         📄 Generate PDF
                     </button>
                     <button class="btn-accent modal-8300-btn" id="modal8300Btn" style="display: none;">
-                        📋 Generate 8300 XML
+                        📋 Submit FinCEN8300
                     </button>
                     <button class="modal-close" id="modalClose">&times;</button>
                 </div>
@@ -2097,7 +2130,7 @@ echo "    • manage-server.sh (server management utility)"
 echo "  ✅ All buttons functional:"
 echo "    • 📄 View Details"
 echo "    • 📄 Generate PDF (auto-fill SAR forms)"
-echo "    • 📋 Generate 8300 XML (BSA compliance)"
+echo "    • 📋 Submit FinCEN8300 (BSA compliance)"
 echo "  ✅ Responsive web interface"
 echo "  ✅ Modal detail views"
 echo "  ✅ Search and pagination"
@@ -2120,19 +2153,24 @@ echo "  http://localhost:3000"
 echo ""
 echo "🎯 Features to test:"
 echo "  • Load SAR data into Elasticsearch first"
-echo "  • Browse and search SAR reports"
+echo "  • Browse and search SAR reports (fuzzy search enabled)"
 echo "  • Click 'View Details' for complete information"
 echo "  • Click 'Generate PDF' to download auto-filled SAR forms"
-echo "  • Click 'Generate 8300 XML' for BSA compliance reporting"
+echo "  • Click 'Submit FinCEN8300' for BSA compliance reporting"
 echo "  • Test search functionality"
 echo "  • Try pagination"
+echo ""
+echo "💾 File Preservation:"
+echo "  • Your PDF files (SAR templates, etc.) are automatically preserved"
+echo "  • Custom data and configuration files are backed up during install"
+echo "  • No need to manually backup files before running fresh install"
 echo ""
 echo "🏆 Your complete BSA compliance workflow is ready!"
 echo ""
 echo "📋 Key Features Included:"
 echo "  📊 SAR Report Management"
 echo "  📄 Automatic PDF Form Filling"
-echo "  📋 FinCEN 8300 XML Generation"  
+echo "  📋 FinCEN8300 Submission & Compliance"  
 echo "  🔒 Workshop Proxy Configuration"
 echo "  🔍 Advanced Search & Filtering"
 echo "  📱 Responsive Design"
@@ -2149,5 +2187,40 @@ echo "📝 Optional: Place SAR template PDF"
 echo "If you have the official SAR template (TD F 90-22.47):"
 echo "  cp /path/to/SAR-template.pdf $INSTALL_DIR/sar-template.pdf"
 echo ""
+
+# Restore backed up user files
+if [ -d "/tmp/sar-backup-$$" ]; then
+    echo "📦 Restoring your backed up files..."
+    
+    # Restore PDF files
+    if ls /tmp/sar-backup-$$/*.pdf 1> /dev/null 2>&1; then
+        cp /tmp/sar-backup-$$/*.pdf "$INSTALL_DIR/"
+        echo "  ✅ PDF files restored"
+    fi
+    
+    # Restore data directory
+    if [ -d "/tmp/sar-backup-$$/data" ]; then
+        cp -r /tmp/sar-backup-$$/data "$INSTALL_DIR/"
+        echo "  ✅ Data directory restored"
+    fi
+    
+    # Restore local environment config
+    if [ -f "/tmp/sar-backup-$$/.env.local" ]; then
+        cp /tmp/sar-backup-$$/.env.local "$INSTALL_DIR/"
+        echo "  ✅ Local environment config restored"
+    fi
+    
+    # Restore custom scripts
+    if ls /tmp/sar-backup-$$/custom-*.* 1> /dev/null 2>&1; then
+        cp /tmp/sar-backup-$$/custom-*.* "$INSTALL_DIR/"
+        echo "  ✅ Custom scripts restored"
+    fi
+    
+    # Clean up backup
+    rm -rf "/tmp/sar-backup-$$"
+    echo "  ✅ Backup cleaned up"
+    echo ""
+fi
+
 echo "Note: PDF generation works with or without the template"
 echo "(creates professional data summaries if no template provided)"
