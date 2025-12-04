@@ -1973,179 +1973,11 @@ XML_8300_GENERATION_ENABLED=true
 SESSION_SECRET=workshop-complete-secret-key-12345
 EOF
 
-echo "📊 Creating sample SAR data..."
-cat > sample-sar-data.json << 'EOF'
-[
-  {
-    "@timestamp": "2024-12-03T10:30:00Z",
-    "financial_institution_name": "First National Bank",
-    "financial_institution_ein": "12-3456789",
-    "financial_institution_address": "123 Main Street",
-    "financial_institution_city": "New York",
-    "financial_institution_state": "NY",
-    "financial_institution_zip": "10001",
-    "account_number": "1234567890",
-    "suspect_last_name": "Smith",
-    "suspect_first_name": "John",
-    "suspect_address": "789 Suspect Street",
-    "suspect_city": "New York", 
-    "suspect_state": "NY",
-    "suspect_zip": "10003",
-    "suspect_phone": "(555) 123-4567",
-    "total_dollar_amount": 50000.00,
-    "suspicious_activity_date": "2024-12-01T00:00:00Z",
-    "activity_type": "Structuring",
-    "activity_description": "Customer made multiple cash deposits just under $10,000 reporting threshold across several days",
-    "report_date": "2024-12-03T10:30:00Z"
-  },
-  {
-    "@timestamp": "2024-12-02T14:15:00Z", 
-    "financial_institution_name": "Second National Bank",
-    "financial_institution_ein": "98-7654321",
-    "financial_institution_address": "456 Banking Ave",
-    "financial_institution_city": "Los Angeles",
-    "financial_institution_state": "CA",
-    "financial_institution_zip": "90210",
-    "account_number": "9876543210",
-    "suspect_entity_name": "Suspicious Corp LLC",
-    "suspect_address": "321 Business Blvd",
-    "suspect_city": "Los Angeles",
-    "suspect_state": "CA", 
-    "suspect_zip": "90211",
-    "suspect_phone": "(555) 987-6543",
-    "total_dollar_amount": 75000.00,
-    "suspicious_activity_date": "2024-11-30T00:00:00Z",
-    "activity_type": "Money Laundering",
-    "activity_description": "Large wire transfers to offshore accounts with no apparent business purpose",
-    "report_date": "2024-12-02T14:15:00Z"
-  },
-  {
-    "@timestamp": "2024-12-01T09:45:00Z",
-    "financial_institution_name": "Community Credit Union", 
-    "financial_institution_ein": "45-6789012",
-    "financial_institution_address": "789 Credit Way",
-    "financial_institution_city": "Chicago",
-    "financial_institution_state": "IL",
-    "financial_institution_zip": "60601",
-    "account_number": "4567890123",
-    "suspect_last_name": "Johnson",
-    "suspect_first_name": "Mary",
-    "suspect_address": "654 Residential St",
-    "suspect_city": "Chicago",
-    "suspect_state": "IL",
-    "suspect_zip": "60602",
-    "suspect_phone": "(555) 456-7890",
-    "total_dollar_amount": 25000.00,
-    "suspicious_activity_date": "2024-11-28T00:00:00Z",
-    "activity_type": "Check Kiting",
-    "activity_description": "Pattern of check deposits and withdrawals designed to exploit float time",
-    "report_date": "2024-12-01T09:45:00Z"
-  }
-]
-EOF
+echo "✅ Complete environment configuration created"
 
-echo "📥 Creating sample data loading script..."
-cat > load-sample-data.sh << 'EOF'
-#!/bin/bash
 
-echo "=== Loading Sample SAR Data ==="
-echo "Loading sample data into Elasticsearch..."
 
-ELASTICSEARCH_URL=${ELASTICSEARCH_URL:-"http://kubernetes-vm:30920"}
-ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME:-"elastic"}
-ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-"elastic"}
-ELASTICSEARCH_INDEX=${ELASTICSEARCH_INDEX:-"sar-reports"}
 
-echo "Elasticsearch URL: $ELASTICSEARCH_URL"
-echo "Username: $ELASTICSEARCH_USERNAME"
-echo "Index: $ELASTICSEARCH_INDEX"
-
-echo "Testing Elasticsearch connectivity..."
-if ! curl -s -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" "$ELASTICSEARCH_URL/_cluster/health" > /dev/null; then
-    echo "❌ Cannot connect to Elasticsearch"
-    echo "Please check your configuration and ensure Elasticsearch is running"
-    exit 1
-fi
-
-echo "✅ Elasticsearch connection successful"
-
-echo "Creating index mapping..."
-curl -X PUT "$ELASTICSEARCH_URL/$ELASTICSEARCH_INDEX" \
-  -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mappings": {
-      "properties": {
-        "@timestamp": { "type": "date" },
-        "financial_institution_name": { "type": "text" },
-        "financial_institution_ein": { "type": "keyword" },
-        "financial_institution_address": { "type": "text" },
-        "financial_institution_city": { "type": "keyword" },
-        "financial_institution_state": { "type": "keyword" },
-        "financial_institution_zip": { "type": "keyword" },
-        "account_number": { "type": "keyword" },
-        "suspect_last_name": { "type": "text" },
-        "suspect_first_name": { "type": "text" },
-        "suspect_entity_name": { "type": "text" },
-        "suspect_address": { "type": "text" },
-        "suspect_city": { "type": "keyword" },
-        "suspect_state": { "type": "keyword" },
-        "suspect_zip": { "type": "keyword" },
-        "suspect_phone": { "type": "keyword" },
-        "total_dollar_amount": { "type": "float" },
-        "suspicious_activity_date": { "type": "date" },
-        "activity_type": { "type": "keyword" },
-        "activity_description": { "type": "text" },
-        "report_date": { "type": "date" }
-      }
-    }
-  }' 2>/dev/null
-
-echo "✅ Index mapping created"
-
-echo "Loading sample SAR reports..."
-counter=1
-while read -r line; do
-    if [ ! -z "$line" ]; then
-        curl -X POST "$ELASTICSEARCH_URL/$ELASTICSEARCH_INDEX/_doc/sar-$counter" \
-          -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" \
-          -H "Content-Type: application/json" \
-          -d "$line" > /dev/null 2>&1
-        
-        if [ $? -eq 0 ]; then
-            echo "✅ Loaded SAR report $counter"
-        else
-            echo "❌ Failed to load SAR report $counter"
-        fi
-        
-        counter=$((counter + 1))
-    fi
-done < <(jq -c '.[]' sample-sar-data.json)
-
-curl -X POST "$ELASTICSEARCH_URL/$ELASTICSEARCH_INDEX/_refresh" \
-  -u "$ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD" > /dev/null 2>&1
-
-echo ""
-echo "=== Data Loading Complete ==="
-echo "✅ Sample SAR data loaded successfully"
-echo "📊 Total reports loaded: $((counter - 1))"
-echo ""
-echo "🌐 You can now:"
-echo "1. Start the application: npm start"
-echo "2. Open: http://localhost:3000"
-echo "3. View SAR reports and test PDF/XML generation"
-EOF
-
-chmod +x load-sample-data.sh
-
-echo "✅ Sample data and loading script created"
-
-echo "📊 Loading sample data..."
-if [ -f "load-sample-data.sh" ]; then
-    ./load-sample-data.sh
-else
-    echo "⚠️  Sample data script not found, continuing..."
-fi
 
 echo "🧪 Testing the installation..."
 echo "🚀 Starting application for testing..."
@@ -2155,10 +1987,6 @@ sleep 3
 
 if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
     echo "✅ Application started successfully"
-    
-    if curl -s http://localhost:3000/api/sar-reports | grep -q "reports"; then
-        echo "✅ Sample data loaded and accessible"
-    fi
 else
     echo "❌ Application test failed"
 fi
@@ -2181,13 +2009,10 @@ echo "    • public/js/app.js (interactive frontend)"
 echo "    • views/index.ejs (complete HTML template)"
 echo "    • .env (workshop configuration)"
 echo "    • package.json (all dependencies)"
-echo "    • sample-sar-data.json (test data)"
-echo "    • load-sample-data.sh (data loader)"
 echo "  ✅ All buttons functional:"
 echo "    • 📄 View Details"
 echo "    • 📄 Generate PDF (auto-fill SAR forms)"
 echo "    • 📋 Generate 8300 XML (BSA compliance)"
-echo "  ✅ Sample data loaded"
 echo "  ✅ Responsive web interface"
 echo "  ✅ Modal detail views"
 echo "  ✅ Search and pagination"
@@ -2200,6 +2025,7 @@ echo "🌐 Then open in browser:"
 echo "  http://localhost:3000"
 echo ""
 echo "🎯 Features to test:"
+echo "  • Load SAR data into Elasticsearch first"
 echo "  • Browse and search SAR reports"
 echo "  • Click 'View Details' for complete information"
 echo "  • Click 'Generate PDF' to download auto-filled SAR forms"
@@ -2219,6 +2045,11 @@ echo "  📱 Responsive Design"
 echo "  ⚡ Real-time Data Loading"
 echo ""
 echo "✅ Everything is working and ready to use!"
+echo ""
+echo "📋 Next Steps:"
+echo "1. Set up Elasticsearch index and load SAR data separately"
+echo "2. Ensure Elasticsearch is running at kubernetes-vm:30920"
+echo "3. Load your SAR documents into the sar-reports index"
 echo ""
 echo "📝 Optional: Place SAR template PDF"
 echo "If you have the official SAR template (TD F 90-22.47):"
